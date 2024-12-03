@@ -103,7 +103,68 @@ def split_text(file_path: str = r"..\data\criminal_law_specific.txt" ):
     # CSV 내용 확인
     print("\nCSV 데이터 일부 미리보기:")
     print(df.head())
+    
+# 파싱된 법률에 대해 최종 중분류, 대분류가 포함된 csv 파일, json을 작성
+def add_law_categories(
+    file_path = r'..\data\parsed_laws.csv',
+    cls_path = r'..\data\형법 분류.csv'    
+):
+    '''
+    법률조문에 대해 최종 중분류, 대분류가 포함된 csv 파일, json 작성
+    Args:
+        file_path (str): The path of the parsed law file.
+        cls_path (str): The path of the law classification file.
+    Returns:
+        json: A list of dict -> 저장
+        csv로 저장
+    
+    '''
+    # 출력 JSON, csv 파일 경로
+    output_json_path = r'..\data\final_law.json'
+    output_csv_path = r'..\data\final_law.csv'
+    
+    # df load
+    law_df = pd.read_csv(file_path)
+    cls_df = pd.read_csv(cls_path)
+    
+    def clean_article_id(article_id):
+        if pd.isna(article_id):  # Handle NaN values gracefully
+            return article_id
+        article_id = article_id.replace('조의', '-').replace('조제', '_')
+        article_id = re.sub(r'[가-힣]', '', article_id)  # Remove all Korean characters
+        return article_id
 
+    # Apply the function to the 'article_id' column and save
+    law_df['article_raw_id'] = law_df['article_id'].apply(clean_article_id)
+        
+    # Iterate through all rows in law_df
+    for index, row in law_df.iterrows():
+        article_id = str(row['article_raw_id'])  # Ensure article_id is a string for comparison
+        # Find matching rows in classification_df
+        match = cls_df[cls_df['조문'].str.contains(article_id, na=False)]
+        if not match.empty:
+            # Add '중분류' and '소분류' to the corresponding row in law_df
+            law_df.loc[index, '중분류'] = match.iloc[0]['중분류']
+            law_df.loc[index, '소분류'] = match.iloc[0]['소분류']
+        else:
+            print(f"No match found for article_id: {article_id}")
+
+    # JSON 파일로 저장
+    law_df.to_json(output_json_path, orient='records', force_ascii=False, indent=4)
+    print(f"JSON 파일 저장 완료: {output_json_path}")
+
+    # CSV 파일로 저장
+    law_df.to_csv(output_csv_path, index=False, encoding='utf-8-sig')
+    print(f"CSV 파일 저장 완료: {output_csv_path}")``
+
+    # CSV 내용 확인
+    print("\nCSV 데이터 일부 미리보기:")
+    print(law_df.head())
+    
+add_law_categories()
+add_law_categories()
+    
+    
 # def split_text(
 #     text: str, tokenizer: tiktoken.get_encoding("cl100k_base"), max_tokens: int, overlap: int = 0
 # ):
