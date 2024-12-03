@@ -149,13 +149,18 @@ def add_law_categories(
         else:
             print(f"No match found for article_id: {article_id}")
 
+    # Create a 'full_text' column with the specified format
+    law_df['full_text'] = law_df.apply(
+        lambda row: f"조항번호 : {row['article_id']}\n조문명 : {row['title']}\n조문내용 : {row['content']}", axis=1
+    )
+
     # JSON 파일로 저장
     law_df.to_json(output_json_path, orient='records', force_ascii=False, indent=4)
     print(f"JSON 파일 저장 완료: {output_json_path}")
 
     # CSV 파일로 저장
     law_df.to_csv(output_csv_path, index=False, encoding='utf-8-sig')
-    print(f"CSV 파일 저장 완료: {output_csv_path}")``
+    print(f"CSV 파일 저장 완료: {output_csv_path}")
 
     # CSV 내용 확인
     print("\nCSV 데이터 일부 미리보기:")
