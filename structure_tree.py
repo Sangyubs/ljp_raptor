@@ -6,12 +6,12 @@ class Node:
     Represents a node in the hierarchical tree structure.
     """
 
-    def __init__(self, text: str, index: int, children: Set[int], embeddings) -> None:
+    def __init__(self, text: str, index: int, children: Set[int], embeddings, title: str) -> None:
         self.index = index
         self.text = text
         self.children = children
         self.embeddings = embeddings
-
+        self.title = title # 소분류 제목
 
 class Tree:
     """

@@ -12,7 +12,7 @@ class BaseSummarizationModel(ABC):
 
 class GPTSummarizationModel(BaseSummarizationModel):
     #fig : model
-    def __init__(self, model="gpt-3.5-turbo"):
+    def __init__(self, model="gpt-4-turbo"):
 
         self.model = model
 

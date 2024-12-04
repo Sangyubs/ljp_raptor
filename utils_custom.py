@@ -134,6 +134,11 @@ def add_law_categories(
         article_id = re.sub(r'[가-힣]', '', article_id)  # Remove all Korean characters
         return article_id
 
+    def exact_match(article_id, law_string):
+        # '조문'을 쉼표로 분리하고 공백을 제거한 후, 정확한 일치를 검사
+        law_list = [x.strip() for x in law_string.split(',')]
+        return article_id in law_list
+
     # Apply the function to the 'article_id' column and save
     law_df['article_raw_id'] = law_df['article_id'].apply(clean_article_id)
         
@@ -141,7 +146,7 @@ def add_law_categories(
     for index, row in law_df.iterrows():
         article_id = str(row['article_raw_id'])  # Ensure article_id is a string for comparison
         # Find matching rows in classification_df
-        match = cls_df[cls_df['조문'].str.contains(article_id, na=False)]
+        match = cls_df[cls_df['조문'].apply(lambda x: exact_match(article_id, x))]
         if not match.empty:
             # Add '중분류' and '소분류' to the corresponding row in law_df
             law_df.loc[index, '중분류'] = match.iloc[0]['중분류']
@@ -166,90 +171,8 @@ def add_law_categories(
     print("\nCSV 데이터 일부 미리보기:")
     print(law_df.head())
     
-add_law_categories()
-add_law_categories()
-    
-    
-# def split_text(
-#     text: str, tokenizer: tiktoken.get_encoding("cl100k_base"), max_tokens: int, overlap: int = 0
-# ):
-#     """
-#     Splits the input text into smaller chunks based on the tokenizer and maximum allowed tokens.
-    
-#     Args:
-#         text (str): The text to be split.
-#         tokenizer (CustomTokenizer): The tokenizer to be used for splitting the text.
-#         max_tokens (int): The maximum allowed tokens.
-#         overlap (int, optional): The number of overlapping tokens between chunks. Defaults to 0.
-    
-#     Returns:
-#         List[str]: A list of text chunks.
-#     """
-#     # Split the text into sentences using multiple delimiters
-#     delimiters = [".", "!", "?", "\n"]
-#     regex_pattern = "|".join(map(re.escape, delimiters))
-#     sentences = re.split(regex_pattern, text)
-    
-#     # Calculate the number of tokens for each sentence
-#     n_tokens = [len(tokenizer.encode(" " + sentence)) for sentence in sentences]
-    
-#     chunks = []
-#     current_chunk = []
-#     current_length = 0
-    
-#     for sentence, token_count in zip(sentences, n_tokens):
-#         # If the sentence is empty or consists only of whitespace, skip it
-#         if not sentence.strip():
-#             continue
-        
-#         # If the sentence is too long, split it into smaller parts
-#         if token_count > max_tokens:
-#             sub_sentences = re.split(r"[,;:]", sentence)
-            
-#             # there is no need to keep empty os only-spaced strings
-#             # since spaces will be inserted in the beginning of the full string
-#             # and in between the string in the sub_chuk list
-#             filtered_sub_sentences = [sub.strip() for sub in sub_sentences if sub.strip() != ""]
-#             sub_token_counts = [len(tokenizer.encode(" " + sub_sentence)) for sub_sentence in filtered_sub_sentences]
-            
-#             sub_chunk = []
-#             sub_length = 0
-            
-#             for sub_sentence, sub_token_count in zip(filtered_sub_sentences, sub_token_counts):
-#                 if sub_length + sub_token_count > max_tokens:
-                    
-#                     # if the phrase does not have sub_sentences, it would create an empty chunk
-#                     # this big phrase would be added anyways in the next chunk append
-#                     if sub_chunk:
-#                         chunks.append(" ".join(sub_chunk))
-#                         sub_chunk = sub_chunk[-overlap:] if overlap > 0 else []
-#                         sub_length = sum(sub_token_counts[max(0, len(sub_chunk) - overlap):len(sub_chunk)])
-                
-#                 sub_chunk.append(sub_sentence)
-#                 sub_length += sub_token_count
-            
-#             if sub_chunk:
-#                 chunks.append(" ".join(sub_chunk))
-        
-#         # If adding the sentence to the current chunk exceeds the max tokens, start a new chunk
-#         elif current_length + token_count > max_tokens:
-#             chunks.append(" ".join(current_chunk))
-#             current_chunk = current_chunk[-overlap:] if overlap > 0 else []
-#             current_length = sum(n_tokens[max(0, len(current_chunk) - overlap):len(current_chunk)])
-#             current_chunk.append(sentence)
-#             current_length += token_count
-        
-#         # Otherwise, add the sentence to the current chunk
-#         else:
-#             current_chunk.append(sentence)
-#             current_length += token_count
-    
-#     # Add the last chunk if it's not empty
-#     if current_chunk:
-#         chunks.append(" ".join(current_chunk))
-    
-#     return chunks
-
+    # embedding에 사용할 수 있도록 full_text를 리스트로 반환
+    return law_df['소분류'].tolist(), law_df['full_text'].tolist()
 
 
 def distances_from_embeddings(
@@ -314,3 +237,20 @@ def indices_of_nearest_neighbors_from_distances(distances: List[float]) -> np.nd
         np.ndarray: An array of indices sorted by ascending distance.
     """
     return np.argsort(distances)
+
+
+def get_text(node_list: List[Node]) -> str:
+    """
+    Generates a single text string by concatenating the text from a list of nodes.
+
+    Args:
+        node_list (List[Node]): List of nodes.
+
+    Returns:
+        str: Concatenated text.
+    """
+    text = ""
+    for node in node_list:
+        text += f"{' '.join(node.text.splitlines())}"
+        text += "\n\n"
+    return text
