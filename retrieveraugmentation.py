@@ -1,6 +1,16 @@
 import logging
 import pickle
 
+from build_tree import TreeBuilder, TreeBuilderConfig
+from structure_tree import Tree
+from qamodels import BaseQAModel
+from embeddingmodels import BaseEmbeddingModel
+from summarizationmodels import BaseSummarizationModel
+from retrive_tree import TreeRetriever, TreeRetrieverConfig
+from qamodels import GPT4QTurboAModel
+
+supported_tree_builders = (TreeBuilder, TreeBuilderConfig)
+
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
 class RetrievalAugmentationConfig:
@@ -118,7 +128,7 @@ class RetrievalAugmentationConfig:
         # Assign the created configurations to the instance
         self.tree_builder_config = tree_builder_config
         self.tree_retriever_config = tree_retriever_config
-        self.qa_model = qa_model or GPT3TurboQAModel()
+        self.qa_model = qa_model or GPT4QTurboAModel()
         self.tree_builder_type = tree_builder_type
 
     def log_config(self):
@@ -137,3 +147,158 @@ class RetrievalAugmentationConfig:
             tree_builder_type=self.tree_builder_type,
         )
         return config_summary
+    
+class RetrievalAugmentation:
+    """
+    A Retrieval Augmentation class that combines the TreeBuilder and TreeRetriever classes.
+    Enables adding documents to the tree, retrieving information, and answering questions.
+    """
+
+    def __init__(self, config=None, tree=None):
+        """
+        Initializes a RetrievalAugmentation instance with the specified configuration.
+        Args:
+            config (RetrievalAugmentationConfig): The configuration for the RetrievalAugmentation instance.
+            tree: The tree instance or the path to a pickled tree file.
+        """
+        if config is None:
+            config = RetrievalAugmentationConfig()
+        if not isinstance(config, RetrievalAugmentationConfig):
+            raise ValueError(
+                "config must be an instance of RetrievalAugmentationConfig"
+            )
+
+        # Check if tree is a string (indicating a path to a pickled tree)
+        if isinstance(tree, str):
+            try:
+                with open(tree, "rb") as file:
+                    self.tree = pickle.load(file)
+                if not isinstance(self.tree, Tree):
+                    raise ValueError("The loaded object is not an instance of Tree")
+            except Exception as e:
+                raise ValueError(f"Failed to load tree from {tree}: {e}")
+        elif isinstance(tree, Tree) or tree is None:
+            self.tree = tree
+        else:
+            raise ValueError(
+                "tree must be an instance of Tree, a path to a pickled Tree, or None"
+            )
+
+        tree_builder_class = supported_tree_builders[config.tree_builder_type][0]
+        self.tree_builder = tree_builder_class(config.tree_builder_config)
+
+        self.tree_retriever_config = config.tree_retriever_config
+        self.qa_model = config.qa_model
+
+        if self.tree is not None:
+            self.retriever = TreeRetriever(self.tree_retriever_config, self.tree)
+        else:
+            self.retriever = None
+
+        logging.info(
+            f"Successfully initialized RetrievalAugmentation with Config {config.log_config()}"
+        )
+    # 새로운 document로 tree 구성 -> 차후 구현
+    def add_documents(self, docs):
+        """
+        Adds documents to the tree and creates a TreeRetriever instance.
+
+        Args:
+            docs (str): The input text to add to the tree.
+        """
+        if self.tree is not None:
+            user_input = input(
+                "Warning: Overwriting existing tree. Did you mean to call 'add_to_existing' instead? (y/n): "
+            )
+            if user_input.lower() == "y":
+                # self.add_to_existing(docs)
+                return
+
+        self.tree = self.tree_builder.build_from_text(text=docs)
+        self.retriever = TreeRetriever(self.tree_retriever_config, self.tree)
+        
+    def retrieve(
+        self,
+        question,
+        start_layer: int = None,
+        num_layers: int = None,
+        top_k: int = 10,
+        max_tokens: int = 3500,
+        collapse_tree: bool = True,
+        return_layer_information: bool = True,
+    ):
+        """
+        Retrieves information and answers a question using the TreeRetriever instance.
+
+        Args:
+            question (str): The question to answer.
+            start_layer (int): The layer to start from. Defaults to self.start_layer.
+            num_layers (int): The number of layers to traverse. Defaults to self.num_layers.
+            max_tokens (int): The maximum number of tokens. Defaults to 3500.
+            use_all_information (bool): Whether to retrieve information from all nodes. Defaults to False.
+
+        Returns:
+            str: The context from which the answer can be found.
+
+        Raises:
+            ValueError: If the TreeRetriever instance has not been initialized.
+        """
+        if self.retriever is None:
+            raise ValueError(
+                "The TreeRetriever instance has not been initialized. Call 'add_documents' first."
+            )
+
+        return self.retriever.retrieve(
+            question,
+            start_layer,
+            num_layers,
+            top_k,
+            max_tokens,
+            collapse_tree,
+            return_layer_information,
+        )
+
+    def answer_question(
+        self,
+        question,
+        top_k: int = 10,
+        start_layer: int = None,
+        num_layers: int = None,
+        max_tokens: int = 3500,
+        collapse_tree: bool = True,
+        return_layer_information: bool = False,
+    ):
+        """
+        Retrieves information and answers a question using the TreeRetriever instance.
+
+        Args:
+            question (str): The question to answer.
+            start_layer (int): The layer to start from. Defaults to self.start_layer.
+            num_layers (int): The number of layers to traverse. Defaults to self.num_layers.
+            max_tokens (int): The maximum number of tokens. Defaults to 3500.
+            use_all_information (bool): Whether to retrieve information from all nodes. Defaults to False.
+
+        Returns:
+            str: The answer to the question.
+
+        Raises:
+            ValueError: If the TreeRetriever instance has not been initialized.
+        """
+        # if return_layer_information:
+        context, layer_information = self.retrieve(
+            question, start_layer, num_layers, top_k, max_tokens, collapse_tree, True
+        )
+
+        answer = self.qa_model.answer_question(context, question)
+
+        if return_layer_information:
+            return answer, layer_information
+
+        return answer
+
+    def save(self, path):
+        if self.tree is None:
+            raise ValueError("There is no tree to save.")
+        with open(path, "wb") as file:
+            pickle.dump(self.tree, file)
+        logging.info(f"Tree successfully saved to {path}")
