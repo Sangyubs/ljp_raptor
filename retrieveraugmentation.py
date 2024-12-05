@@ -1,5 +1,6 @@
 import logging
 import pickle
+import os
 
 from build_tree import TreeBuilder, TreeBuilderConfig
 from structure_tree import Tree
@@ -297,6 +298,9 @@ class RetrievalAugmentation:
         return answer
 
     def save(self, path):
+        sep = list(self.tree_builder.embedding_models.keys())[0]
+        base, ext = os.path.splitext(path)
+        path = f"{base}_{sep}{ext}"   
         if self.tree is None:
             raise ValueError("There is no tree to save.")
         with open(path, "wb") as file:
