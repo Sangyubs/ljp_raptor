@@ -6,10 +6,10 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 
-from .summarizationmodels import BaseSummarizationModel, GPTSummarizationModel
-from .embeddingmodels import BaseEmbeddingModel, OpenAIEmbeddingModel
-from .structure_tree import Node, Tree
-from .utils_custom import (distances_from_embeddings, get_embeddings, 
+from summarizationmodels import BaseSummarizationModel, GPTSummarizationModel
+from embeddingmodels import BaseEmbeddingModel, OpenAIEmbeddingModel
+from structure_tree import Node, Tree
+from utils_custom import (distances_from_embeddings, get_embeddings, 
                            indices_of_nearest_neighbors_from_distances, 
                            split_text, add_law_categories, get_text)
 class TreeBuilderConfig:
