@@ -7,6 +7,15 @@ import pandas as pd
 from structure_tree import Node
 import re
 
+# layer의 node를 받아서 node : layer 형태로 변경
+def reverse_mapping(layer_to_nodes: Dict[int, List[Node]]) -> Dict[Node, int]:
+    node_to_layer = {}
+    for layer, nodes in layer_to_nodes.items():
+        for node in nodes:
+            node_to_layer[node.index] = layer
+    return node_to_layer
+
+
 # text -> chunks로 변경 : 나는 법령 전체를 받아서 chunks로 나누는 함수 수정 필요
 def split_text(file_path: str = r"..\data\criminal_law_specific.txt" ):
     '''
@@ -237,6 +246,22 @@ def indices_of_nearest_neighbors_from_distances(distances: List[float]) -> np.nd
         np.ndarray: An array of indices sorted by ascending distance.
     """
     return np.argsort(distances)
+
+
+def get_node_list(node_dict: Dict[int, Node]) -> List[Node]:
+    """
+    Converts a dictionary of node indices to a sorted list of nodes.
+
+    Args:
+        node_dict (Dict[int, Node]): Dictionary of node indices to nodes.
+
+    Returns:
+        List[Node]: Sorted list of nodes.
+    """
+    indices = sorted(node_dict.keys())
+    node_list = [node_dict[index] for index in indices]
+    return node_list
+
 
 
 def get_text(node_list: List[Node]) -> str:
