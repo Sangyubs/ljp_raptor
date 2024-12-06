@@ -256,7 +256,8 @@ class TreeBuilder:
         return leaf_nodes
  
     # text -> Tree / utils의 split_text 수정 필요
-    def build_from_text(self, lock=lock, use_multithreading: bool = True) -> Tree:
+    def build_from_text(self, file_path, cls_path, 
+                        lock=lock, use_multithreading: bool = True) -> Tree:
         """Builds a golden tree from the input text, optionally using multithreading.
 
         Args:
@@ -268,7 +269,7 @@ class TreeBuilder:
             Tree: The golden tree structure.
         """
         # Building All Leaf Nodes 
-        chunks = add_law_categories() # law_df['소분류'].tolist(), law_df['full_text'].tolist()
+        chunks = add_law_categories(file_path, cls_path) # law_df['소분류'].tolist(), law_df['full_text'].tolist()
 
         logging.info("Creating Leaf Nodes")
 

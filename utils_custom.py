@@ -114,10 +114,7 @@ def split_text(file_path: str = r"..\data\criminal_law_specific.txt" ):
     print(df.head())
     
 # 파싱된 법률에 대해 최종 중분류, 대분류가 포함된 csv 파일, json을 작성
-def add_law_categories(
-    file_path = r'..\data\parsed_laws.csv',
-    cls_path = r'..\data\형법 분류.csv'    
-):
+def add_law_categories(file_path,cls_path):
     '''
     법률조문에 대해 최종 중분류, 대분류가 포함된 csv 파일, json 작성
     Args:

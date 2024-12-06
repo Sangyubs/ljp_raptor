@@ -87,9 +87,8 @@ class RetrievalAugmentationConfig:
             tb_summarization_model = summarization_model
 
         # Set TreeBuilderConfig
-        tree_builder_class, tree_builder_config_class = supported_tree_builders[
-            tree_builder_type
-        ]
+        tree_builder_class, tree_builder_config_class = supported_tree_builders
+        
         if tree_builder_config is None:
             tree_builder_config = tree_builder_config_class(
                 tokenizer=tb_tokenizer,
@@ -185,7 +184,7 @@ class RetrievalAugmentation:
                 "tree must be an instance of Tree, a path to a pickled Tree, or None"
             )
 
-        tree_builder_class = supported_tree_builders[config.tree_builder_type][0]
+        tree_builder_class = supported_tree_builders[0]
         self.tree_builder = tree_builder_class(config.tree_builder_config)
 
         self.tree_retriever_config = config.tree_retriever_config
@@ -199,8 +198,11 @@ class RetrievalAugmentation:
         logging.info(
             f"Successfully initialized RetrievalAugmentation with Config {config.log_config()}"
         )
-    # 새로운 document로 tree 구성 -> 차후 구현
-    def add_documents(self, docs):
+    # 새로운 document로 cluster를 이용해 tree 구성 -> 차후 구현 
+    # 현재는 docs(csv) path를 입력으로 받아서 build_tree.py에서 구현한 
+    # build_from_text를 통해서 tree를 만들도록 구현
+    def add_documents(self, docs_path = r'..\data\parsed_laws.csv', 
+                      cls_path = r'..\data\형법 분류.csv'):
         """
         Adds documents to the tree and creates a TreeRetriever instance.
 
@@ -215,7 +217,7 @@ class RetrievalAugmentation:
                 # self.add_to_existing(docs)
                 return
 
-        self.tree = self.tree_builder.build_from_text(text=docs)
+        self.tree = self.tree_builder.build_from_text(file_path = docs_path, cls_path = cls_path)
         self.retriever = TreeRetriever(self.tree_retriever_config, self.tree)
         
     def retrieve(

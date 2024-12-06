@@ -1,0 +1,11 @@
+            tree_builder_config = tree_builder_config_class(
+                tokenizer=tb_tokenizer,
+                max_tokens=tb_max_tokens,
+                num_layers=tb_num_layers,
+                threshold=tb_threshold,
+                top_k=tb_top_k,
+                selection_mode=tb_selection_mode,
+                summarization_length=tb_summarization_length,
+                summarization_model=tb_summarization_model,
+                embedding_models=tb_embedding_models,
+                cluster_embedding_model=tb_cluster_embedding_model,
