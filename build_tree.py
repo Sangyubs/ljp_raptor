@@ -148,50 +148,50 @@ class TreeBuilder:
         self.summarization_model = config.summarization_model
         self.embedding_models = config.embedding_models
         self.cluster_embedding_model = config.cluster_embedding_model
-
+        self.lock = Lock()
         logging.info(
             f"Successfully initialized TreeBuilder with Config {config.log_config()}"
         )
-    lock = Lock()
+    
     # text, index -> (index, Node)    
     def create_node(
-            self, index: int, text: str, children_indices: Optional[Set[int]] = None, title: str = None
+        self, index: int, text: str, children_indices: Optional[Set[int]] = None, title: str = None
         ) -> Tuple[int, Node]:
-            """Creates a new node with the given index, text, and (optionally) children indices.
+        """Creates a new node with the given index, text, and (optionally) children indices.
 
-            Args:
-                index (int): The index of the new node.
-                text (str): The text associated with the new node.
-                children_indices (Optional[Set[int]]): A set of indices representing the children of the new node.
-                    If not provided, an empty set will be used.
+        Args:
+            index (int): The index of the new node.
+            text (str): The text associated with the new node.
+            children_indices (Optional[Set[int]]): A set of indices representing the children of the new node.
+                If not provided, an empty set will be used.
 
-            Returns:
-                Tuple[int, Node]: A tuple containing the index and the newly created node.
-            """
-            if children_indices is None:
-                children_indices = set()
+        Returns:
+            Tuple[int, Node]: A tuple containing the index and the newly created node.
+        """
+        if children_indices is None:
+            children_indices = set()
 
-            embeddings = {
-                model_name: model.create_embedding(text)
-                for model_name, model in self.embedding_models.items()
-            }
-            return (index, Node(text, index, children_indices, embeddings, title))
+        embeddings = {
+            model_name: model.create_embedding(text)
+            for model_name, model in self.embedding_models.items()
+        }
+        return (index, Node(text, index, children_indices, embeddings, title))
 
     # text -> embedding(cluster_embedding_model)
     def create_embedding(self, text) -> List[float]:
-            """
-            Generates embeddings for the given text using the specified embedding model.
+        """
+        Generates embeddings for the given text using the specified embedding model.
 
-            Args:
-                text (str): The text for which to generate embeddings.
+        Args:
+            text (str): The text for which to generate embeddings.
 
-            Returns:
-                List[float]: The generated embeddings.
-            """
-            return self.embedding_models[self.cluster_embedding_model].create_embedding(
-                text
-            )
-    
+        Returns:
+            List[float]: The generated embeddings.
+        """
+        return self.embedding_models[self.cluster_embedding_model].create_embedding(
+            text
+        )
+
     # context -> summary(summarization_model)
     # 원 파일과 달리 max_tokens를 150->200으로 수정
     def summarize(self, context, max_tokens=200) -> str:
@@ -223,7 +223,7 @@ class TreeBuilder:
         Returns:
             List[Dict[str, str]]: A list of dictionaries with the grouped column and concatenated text.
         """
-        df = pd.read_csv(file_path = file_path)
+        df = pd.read_csv(file_path)
         result = (
             df.groupby(search_column)[text_column]
             .apply(lambda texts: " ".join(texts.dropna()))
@@ -242,22 +242,36 @@ class TreeBuilder:
         Returns:
             Dict[int, Node]: A dictionary mapping node indices to the corresponding leaf nodes.
         """
+        # with ThreadPoolExecutor() as executor:
+        #     future_nodes = {
+        #         executor.submit(self.create_node, index, chunk[1], chunk[0]): (index, chunk[1])
+        #         for index, chunk in enumerate(zip(*chunks))
+        #     }
+
+        #     leaf_nodes = {}
+        #     for future in as_completed(future_nodes):
+        #         index, node = future.result()
+        #         leaf_nodes[index] = node
+
+        # return leaf_nodes
+ 
         with ThreadPoolExecutor() as executor:
             future_nodes = {
-                executor.submit(self.create_node, index, text): (index, text)
-                for index, text in enumerate(chunks)
+                executor.submit(self.create_node, index=index, text=chunk[1], title=chunk[0]): (index, chunk)
+                for index, chunk in enumerate(zip(*chunks))
             }
 
             leaf_nodes = {}
             for future in as_completed(future_nodes):
-                index, node = future.result()
+                index, chunk = future_nodes[future]
+                __, node = future.result()  # Assuming `self.create_node` returns (index, node)
                 leaf_nodes[index] = node
 
         return leaf_nodes
  
     # text -> Tree / utils의 split_text 수정 필요
     def build_from_text(self, file_path, cls_path, 
-                        lock=lock, use_multithreading: bool = True) -> Tree:
+                        lock=None, use_multithreading: bool = True) -> Tree:
         """Builds a golden tree from the input text, optionally using multithreading.
 
         Args:
@@ -303,11 +317,12 @@ class TreeBuilder:
             context=text,
             max_tokens=self.summarization_length,
             )
-            indices_with_title = [node.index for node in leaf_nodes if node.title==title]
+            indices_with_title = [node.index for node in leaf_nodes.values() if node.title==title]
             
             next_node_index, new_parent_node = self.create_node(next_node_index, summarized_text, indices_with_title, title)
             all_nodes[next_node_index] = new_parent_node
-                    
+            
+            lock = lock or self.lock  
             with lock:
                 second_level_nodes[next_node_index] = new_parent_node
             next_node_index += 1
@@ -327,14 +342,14 @@ class TreeBuilder:
         third_level_nodes = {}  
         relevant_node_list = defaultdict(list)
         next_node_index = len(all_nodes)
-        for key, values in relevant_fulltext_list:
+        for dict_items in relevant_fulltext_list:
             for node in layer_to_nodes[1]:
-                if node.title in values:
-                    relevant_node_list[key].append(node)
+                if node.title in dict_items['text_list']:
+                    relevant_node_list[dict_items['중분류']].append(node)
                 else:
                     raise ValueError("2nd node title이 3rd node text_list에 없음")
-            text = " ".join([node.text for node in relevant_node_list[key]])
-            title = key
+            text = " ".join([node.text for node in relevant_node_list[dict_items['중분류']]])
+            title = dict_items['중분류']
             summarized_text = self.summarize(
             context=text,
             max_tokens=self.summarization_length,
