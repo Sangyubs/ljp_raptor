@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import pickle
 import os
@@ -36,7 +37,7 @@ class RetrievalAugmentationConfig:
         # TreeBuilderConfig arguments
         tb_tokenizer=None,
         tb_max_tokens=100,
-        tb_num_layers=5,
+        tb_num_layers=3,
         tb_threshold=0.5,
         tb_top_k=5,
         tb_selection_mode="top_k",
@@ -299,10 +300,11 @@ class RetrievalAugmentation:
 
         return answer
 
-    def save(self, path):
+    def save(self, base_path):
         sep = list(self.tree_builder.embedding_models.keys())[0]
-        base, ext = os.path.splitext(path)
-        path = f"{base}_{sep}{ext}"   
+        # base, ext = os.path.splitext(path)
+        current_date = datetime.now().strftime("%Y%m%d")  # YYYYMMDD 형식
+        path = f"{current_date}_{base_path}_{sep}"   
         if self.tree is None:
             raise ValueError("There is no tree to save.")
         with open(path, "wb") as file:
