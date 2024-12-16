@@ -304,7 +304,7 @@ class RetrievalAugmentation:
         sep = list(self.tree_builder.embedding_models.keys())[0]
         # base, ext = os.path.splitext(path)
         current_date = datetime.now().strftime("%Y%m%d")  # YYYYMMDD 형식
-        path = f"{current_date}_{base_path}_{sep}"   
+        path = f"{base_path}_{sep}_{current_date}"   
         if self.tree is None:
             raise ValueError("There is no tree to save.")
         with open(path, "wb") as file:

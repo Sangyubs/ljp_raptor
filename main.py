@@ -15,7 +15,7 @@ if load_path is None:
     # tree 생성
     RA.add_documents()
     # tree 저장
-    save_path = "./data/tree"
+    save_path = "../data/tree"
     RA.save(save_path)
 else:
     # tree가 있다면 로드
@@ -23,3 +23,4 @@ else:
  
 question = "다른 사람이 카페에 놓아둔 지갑을 가져갔다. 해당하는 형법 법조항은?"
 answer = RA.answer_question(question)
+print(answer)

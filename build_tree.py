@@ -312,7 +312,7 @@ class TreeBuilder:
         # 소분류마다 노드 생성
         for fulltext in relevant_fulltext_list:
             text = fulltext['concatenated_text']
-            title = fulltext['소분류'],
+            title = fulltext['소분류']
             summarized_text = self.summarize(
             context=text,
             max_tokens=self.summarization_length,
@@ -337,24 +337,35 @@ class TreeBuilder:
             .reset_index()
             .rename(columns={'소분류': 'text_list'})   # 결과 컬럼 이름 변경
         )
-        relevant_fulltext_list = result.to_dict(orient='records') 
         
-        third_level_nodes = {}  
+        relevant_fulltext_list = result.to_dict(orient='records') 
         relevant_node_list = defaultdict(list)
         next_node_index = len(all_nodes)
+        third_level_nodes = {}  
+        
         for dict_items in relevant_fulltext_list:
             for node in layer_to_nodes[1]:
+                found_in_any_dict = any(node.title in d['text_list'] for d in relevant_fulltext_list)
+                if not found_in_any_dict:
+                    raise ValueError("2nd node title이 어떤 3rd node의 text_list에도 없음")
                 if node.title in dict_items['text_list']:
                     relevant_node_list[dict_items['중분류']].append(node)
-                else:
-                    raise ValueError("2nd node title이 3rd node text_list에 없음")
+
+        
+        # for dict_items in relevant_fulltext_list:
+        #     for node in layer_to_nodes[1]:
+        #         if node.title in dict_items['text_list']:
+        #             relevant_node_list[dict_items['중분류']].append(node)
+        #         else:
+        #             raise ValueError("2nd node title이 3rd node text_list에 없음")
+        
             text = " ".join([node.text for node in relevant_node_list[dict_items['중분류']]])
             title = dict_items['중분류']
             summarized_text = self.summarize(
             context=text,
             max_tokens=self.summarization_length,
             )
-            indices_with_title = [node.index for node in relevant_node_list[key]]
+            indices_with_title = [node.index for node in relevant_node_list[dict_items['중분류']]]
             next_node_index, new_parent_node = self.create_node(next_node_index, summarized_text, indices_with_title, title)
             all_nodes[next_node_index] = new_parent_node
             with lock:
