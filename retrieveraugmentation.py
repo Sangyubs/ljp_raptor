@@ -301,10 +301,15 @@ class RetrievalAugmentation:
         return answer
 
     def save(self, base_path):
-        sep = list(self.tree_builder.embedding_models.keys())[0]
         # base, ext = os.path.splitext(path)
+        sep = list(self.tree_builder.embedding_models.keys())[0] # 모델명
         current_date = datetime.now().strftime("%Y%m%d")  # YYYYMMDD 형식
-        path = f"{base_path}_{sep}_{current_date}"   
+        
+        path_parts = base_path.split('/') 
+        base_name = path_parts[-1] # tree
+        new_name = f"{current_date}_{sep}{base_name}"
+        path_parts[-1] = new_name
+        path = '/'.join(path_parts)  
         if self.tree is None:
             raise ValueError("There is no tree to save.")
         with open(path, "wb") as file:
