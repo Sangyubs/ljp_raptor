@@ -68,10 +68,15 @@ class RetrievalAugmentationConfig:
                 raise ValueError(
                     "Only one of 'tb_embedding_models' or 'embedding_model' should be provided, not both."
                 )
-            tb_embedding_models = {"EMB": embedding_model}
+            tb_embedding_model_name = embedding_model.__class__.__name__
+            tb_embedding_models = {"tb_embedding_model_name": embedding_model}
             tr_embedding_model = embedding_model
-            tb_cluster_embedding_model = "EMB"
-            tr_context_embedding_model = "EMB"
+            tb_cluster_embedding_model = "tb_embedding_model_name"
+            tr_context_embedding_model = "tb_embedding_model_name"
+            # tb_embedding_models = {"EMB": embedding_model}
+            # tr_embedding_model = embedding_model
+            # tb_cluster_embedding_model = "EMB"
+            # tr_context_embedding_model = "EMB"
 
         if summarization_model is not None and not isinstance(
             summarization_model, BaseSummarizationModel
@@ -302,12 +307,13 @@ class RetrievalAugmentation:
 
     def save(self, base_path):
         # base, ext = os.path.splitext(path)
-        sep = list(self.tree_builder.embedding_models.keys())[0] # 모델명
+        embedding_model_name = list(self.tree_builder.embedding_models.keys())[0] # 모델명
+        summarize_model_name = self.tree_builder.summarization_model.__class__.__name__
         current_date = datetime.now().strftime("%Y%m%d")  # YYYYMMDD 형식
         
         path_parts = base_path.split('/') 
         base_name = path_parts[-1] # tree
-        new_name = f"{current_date}_{sep}{base_name}"
+        new_name = f"{current_date}_{embedding_model_name}_{summarize_model_name}_{base_name}"
         path_parts[-1] = new_name
         path = '/'.join(path_parts)  
         if self.tree is None:
