@@ -35,7 +35,7 @@ class TreeBuilderConfig:
         self.max_tokens = max_tokens
 
         if num_layers is None:
-            num_layers = 3
+            num_layers = 2
         if not isinstance(num_layers, int) or num_layers < 1:
             raise ValueError("num_layers must be an integer and at least 1")
         self.num_layers = num_layers
