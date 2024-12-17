@@ -11,7 +11,8 @@ from retrieveraugmentation import RetrievalAugmentation, RetrievalAugmentationCo
 # config 설정
 custom_qa = GPT4oModel() # or None
 load_path = '../data/20241217_OpenAItree' # or None
-
+custom_summarizer = None
+custom_embedding = None
 # tree load : load_path = None 이면 생성 후 load
 if load_path is None:
     # tree가 없다면 생성 후 저장
@@ -24,9 +25,9 @@ if load_path is None:
 
 # Create a config with your custom models
 custom_config = RetrievalAugmentationConfig(
-    # summarization_model=custom_summarizer,
+    summarization_model=custom_summarizer,
     qa_model=custom_qa,
-    # embedding_model=custom_embedding
+    embedding_model=custom_embedding
 )
 
 # Initialize RAPTOR with your custom config
@@ -34,4 +35,4 @@ RA = RetrievalAugmentation(config=custom_config, tree = load_path)
 
 question = "다른 사람이 카페에 놓아둔 지갑을 가져갔다. 해당하는 형법 법조항은?"
 answer = RA.answer_question(question)
-print(answer)
+print('answer : \n', answer)
