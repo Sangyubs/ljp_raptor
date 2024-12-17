@@ -18,7 +18,7 @@ class GPT4SummarizationModel(BaseSummarizationModel):
 
     @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(6))
     # fig : max_tokens
-    def summarize(self, context, max_tokens=1000):
+    def summarize(self, context):
 
         try:
             client = OpenAI()
@@ -32,7 +32,7 @@ class GPT4SummarizationModel(BaseSummarizationModel):
                         "content": f"Write a summary of the following, including as many key details as possible: {context}:",
                     },
                 ],
-                max_tokens=max_tokens,
+                # max_tokens=max_tokens,
             )
 
             return response.choices[0].message.content
@@ -49,7 +49,7 @@ class GPT4oSummarizationModel(BaseSummarizationModel):
 
     @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(6))
     # fig : max_tokens
-    def summarize(self, context, max_tokens=1000):
+    def summarize(self, context):
 
         try:
             client = OpenAI()
@@ -60,10 +60,10 @@ class GPT4oSummarizationModel(BaseSummarizationModel):
                     {"role": "system", "content": "You are a helpful assistant."},
                     {
                         "role": "user",
-                        "content": f"Write a summary of the following, including as many key details as possible: {context}:",
+                        "content": f"Write a summary of the following in Korean, including as many key details as possible: {context}:",
                     },
                 ],
-                max_tokens=max_tokens,
+                # max_tokens=max_tokens,
             )
 
             return response.choices[0].message.content
