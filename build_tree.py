@@ -6,7 +6,7 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 
-from summarizationmodels import BaseSummarizationModel, GPTSummarizationModel
+from summarizationmodels import BaseSummarizationModel, GPT4SummarizationModel
 from embeddingmodels import BaseEmbeddingModel, OpenAIEmbeddingModel
 from structure_tree import Node, Tree
 from utils_custom import (distances_from_embeddings, get_embeddings, 
@@ -63,7 +63,7 @@ class TreeBuilderConfig:
         self.summarization_length = summarization_length
 
         if summarization_model is None:
-            summarization_model = GPTSummarizationModel()
+            summarization_model = GPT4SummarizationModel()
         if not isinstance(summarization_model, BaseSummarizationModel):
             raise ValueError(
                 "summarization_model must be an instance of BaseSummarizationModel"
