@@ -5,10 +5,14 @@
 그 후, answer_question을 통해 질문에 대한 답을 얻을 수 있다.
 '''
 # from json import load
-from retrieveraugmentation import RetrievalAugmentation
+from qamodels import GPT4oModel
+from retrieveraugmentation import RetrievalAugmentation, RetrievalAugmentationConfig
 
-load_path = None
+# config 설정
+custom_qa = GPT4oModel() # or None
+load_path = '../data/20241217_OpenAItree' # or None
 
+# tree load : load_path = None 이면 생성 후 load
 if load_path is None:
     # tree가 없다면 생성 후 저장
     RA = RetrievalAugmentation()
@@ -17,10 +21,17 @@ if load_path is None:
     # tree 저장
     save_path = "../data/tree"
     RA.save(save_path)
-else:
-    # tree가 있다면 로드
-    RA = RetrievalAugmentation(tree = load_path)
- 
+
+# Create a config with your custom models
+custom_config = RetrievalAugmentationConfig(
+    # summarization_model=custom_summarizer,
+    qa_model=custom_qa,
+    # embedding_model=custom_embedding
+)
+
+# Initialize RAPTOR with your custom config
+RA = RetrievalAugmentation(config=custom_config, tree = load_path)
+
 question = "다른 사람이 카페에 놓아둔 지갑을 가져갔다. 해당하는 형법 법조항은?"
 answer = RA.answer_question(question)
 print(answer)
