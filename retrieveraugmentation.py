@@ -270,7 +270,7 @@ class RetrievalAugmentation:
         num_layers: int = None,
         max_tokens: int = 3500,
         collapse_tree: bool = True,
-        return_layer_information: bool = False,
+        return_layer_information: bool = True,
     ):
         """
         Retrieves information and answers a question using the TreeRetriever instance.
@@ -292,7 +292,7 @@ class RetrievalAugmentation:
         context, layer_information = self.retrieve(
             question, start_layer, num_layers, top_k, max_tokens, collapse_tree, True
         )
-
+        print('context : ' , context)
         answer = self.qa_model.answer_question(context, question)
 
         if return_layer_information:
