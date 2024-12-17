@@ -11,8 +11,9 @@ from retrieveraugmentation import RetrievalAugmentation, RetrievalAugmentationCo
 # config 설정
 custom_qa = GPT4oModel() # or None
 load_path = '../data/20241217_OpenAItree' # or None
-custom_summarizer = None
-custom_embedding = None
+custom_summarizer = None # or model class
+custom_embedding = None # or model class
+
 # tree load : load_path = None 이면 생성 후 load
 if load_path is None:
     # tree가 없다면 생성 후 저장
